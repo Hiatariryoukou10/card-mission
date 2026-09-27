@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes"><title>CARD MISSION</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fb;margin:0;color:#18202a}
+main{max-width:700px;margin:auto;padding:18px}h1{margin:5px 0}.sub{color:#687384;margin-bottom:15px}
+nav{display:flex;gap:7px;overflow:auto;margin-bottom:12px}button{border:0;border-radius:12px;padding:12px 15px;font-weight:700;background:#e4e9f1;color:#26313d}
+nav button.active,.primary{background:#202b38;color:white}.box{background:white;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 2px 12px #0001}
+label{display:block;font-weight:700;margin:12px 0 7px}input[type=text]{width:100%;padding:13px;border:1px solid #ccd4df;border-radius:10px;font-size:16px;box-sizing:border-box}
+.preview{width:100%;max-height:360px;object-fit:contain;margin-top:10px;border-radius:12px;display:none;background:#eee}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.item{border:1px solid #e0e5ec;border-radius:14px;padding:8px}.item img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:9px}.item b{display:block;margin:6px 0}
+.hidden{display:none}.small{font-size:13px;color:#687384}.danger{background:#fff0f0;color:#b42318}.result{font-size:25px;font-weight:800;margin-top:12px}
+</style></head><body><main>
+<h1>⚡ CARD MISSION</h1><div class="sub">自分のカードで遊ぶカードミッション</div>
+<nav><button class="active" onclick="tab('home',this)">ホーム</button><button onclick="tab('reg',this)">カード登録</button><button onclick="tab('list',this)">カード一覧</button><button onclick="tab('battle',this)">対戦</button></nav>
+
+<section id="home"><div class="box"><h2>ようこそ！</h2><p>カードを撮影 → カード名を入力 → 登録 → 対戦できます。</p><p class="small">カード写真はこの端末のSafari内に保存され、GitHubには保存されません。</p><button class="primary" onclick="tab('reg')">カードを登録する</button></div><div class="box">登録枚数：<strong id="count">0</strong>枚</div></section>
+
+<section id="reg" class="hidden"><div class="box"><h2>カード登録</h2>
+<label>カード写真</label><input id="photo" type="file" accept="image/*" capture="environment">
+<img id="preview" class="preview">
+<label>カード名</label><input id="name" type="text" placeholder="例：仮面ライダーゼッツ">
+<br><br><button id="save" class="primary">このカードを登録</button> <button id="clear" class="danger">クリア</button>
+<p id="msg" class="small"></p></div></section>
+
+<section id="list" class="hidden"><div class="box"><h2>カード一覧</h2><div id="cards" class="grid"></div><p id="empty" class="small">まだカードがありません。</p></div></section>
+
+<section id="battle" class="hidden"><div class="box"><h2>⚔️ ひとり対戦</h2><select id="mine" style="width:100%;padding:12px;border-radius:10px"></select><br><br><button id="fight" class="primary">バトル開始！</button><div id="result"></div></div></section>
+</main>
+<script>
+const KEY='cardMissionV4';let data=JSON.parse(localStorage.getItem(KEY)||'[]');
+const $=x=>document.getElementById(x);
+function tab(id,btn){document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));$(id).classList.remove('hidden');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');render()}
+$('photo').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{$('preview').src=r.result;$('preview').style.display='block'};r.readAsDataURL(f)};
+function compress(src){return new Promise(ok=>{let i=new Image;i.onload=()=>{let m=900,s=Math.min(1,m/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.72))};i.src=src})}
+$('save').onclick=()=>{let f=$('photo').files[0],n=$('name').value.trim();if(!f){$('msg').textContent='カード写真を選んでください。';return}if(!n){$('msg').textContent='カード名を入力してください。';return}let r=new FileReader;r.onload=async()=>{data.unshift({id:Date.now(),name:n,img:await compress(r.result)});localStorage.setItem(KEY,JSON.stringify(data));$('msg').textContent='登録しました！';$('photo').value='';$('name').value='';$('preview').style.display='none';render()};r.readAsDataURL(f)};
+$('clear').onclick=()=>{$('photo').value='';$('name').value='';$('preview').style.display='none';$('msg').textContent=''};
+function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function render(){$('count').textContent=data.length;$('empty').style.display=data.length?'none':'block';$('cards').innerHTML=data.map(c=>'<div class="item"><img src="'+c.img+'"><b>'+esc(c.name)+'</b><button class="danger" onclick="del('+c.id+')">削除</button></div>').join('');$('mine').innerHTML=data.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('')}
+function del(id){if(confirm('このカードを削除しますか？')){data=data.filter(c=>c.id!==id);localStorage.setItem(KEY,JSON.stringify(data));render()}}
+$('fight').onclick=()=>{if(!data.length){$('result').textContent='まずカードを登録してください。';return}let c=data.find(x=>x.id==$('mine').value)||data[0],e=['ゼロワン','ガッチャード','ギーツ','リバイス','ゼッツ'][Math.floor(Math.random()*5)],a=Math.floor(Math.random()*41)+60,b=Math.floor(Math.random()*41)+60;$('result').innerHTML='<div class="box"><b>'+esc(c.name)+'</b> VS <b>'+e+'</b><br>あなた：'+a+'　相手：'+b+'<div class="result">'+(a>=b?'WIN！':'もう一度チャレンジ！')+'</div></div>'};
+render();
+</script></body></html>
