@@ -5,40 +5,244 @@
 <style>
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fb;margin:0;color:#18202a}
 main{max-width:700px;margin:auto;padding:18px}h1{margin:5px 0}.sub{color:#687384;margin-bottom:15px}
-nav{display:flex;gap:7px;overflow:auto;margin-bottom:12px}button{border:0;border-radius:12px;padding:12px 15px;font-weight:700;background:#e4e9f1;color:#26313d}
+nav{display:flex;gap:7px;overflow:auto;margin-bottom:12px}button{border:0;border-radius:12px;padding:12px 15px;font-weight:700;background:#e4e9f1;color:#26313d;cursor:pointer}
 nav button.active,.primary{background:#202b38;color:white}.box{background:white;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 2px 12px #0001}
-label{display:block;font-weight:700;margin:12px 0 7px}input[type=text]{width:100%;padding:13px;border:1px solid #ccd4df;border-radius:10px;font-size:16px;box-sizing:border-box}
+label{display:block;font-weight:700;margin:12px 0 7px}input[type=text],input[type=number]{width:100%;padding:13px;border:1px solid #ccd4df;border-radius:10px;font-size:16px;box-sizing:border-box}
+input[type=number]{margin-bottom:12px}
 .preview{width:100%;max-height:360px;object-fit:contain;margin-top:10px;border-radius:12px;display:none;background:#eee}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.item{border:1px solid #e0e5ec;border-radius:14px;padding:8px}.item img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:9px}.item b{display:block;margin:6px 0}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.item{border:1px solid #e0e5ec;border-radius:14px;padding:8px}.item img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:9px}
 .hidden{display:none}.small{font-size:13px;color:#687384}.danger{background:#fff0f0;color:#b42318}.result{font-size:25px;font-weight:800;margin-top:12px}
+.battle-screen{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px}
+.player{border:2px solid #e0e5ec;border-radius:12px;padding:15px;text-align:center;background:#f9fafc}
+.player h3{margin:0 0 10px;font-size:16px}.player img{width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin:10px 0}
+.hp-bar{width:100%;height:24px;background:#e0e5ec;border-radius:8px;overflow:hidden;margin:10px 0}
+.hp-fill{height:100%;background:#10b981;transition:width .3s ease;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px}
+.hp-fill.danger{background:#ef4444}.hp-fill.warning{background:#f59e0b}
+.action-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.action-buttons button{padding:10px;font-size:14px;width:100%}
+.battle-log{background:#f0f5fa;border-radius:10px;padding:12px;margin:15px 0;min-height:80px;max-height:200px;overflow-y:auto}
+.log-entry{margin:8px 0;padding:8px;border-left:3px solid #10b981;background:white;border-radius:4px}
+.log-entry.damage{border-left-color:#ef4444}
+.log-entry.heal{border-left-color:#3b82f6}
+.log-entry.crit{border-left-color:#f59e0b;font-weight:700}
+.effect{position:fixed;pointer-events:none;font-weight:700;font-size:24px;animation:floatUp 1.5s ease-out forwards}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
+.effect.damage{color:#ef4444}
+.effect.crit{color:#f59e0b;text-shadow:0 0 8px #f59e0b}
+.winner{font-size:28px;font-weight:800;color:#10b981;margin:20px 0}
+.winner.loser{color:#ef4444}
+select{width:100%;padding:12px;border-radius:10px;border:1px solid #ccd4df;margin-bottom:12px}
+.card-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.stat-input{display:flex;flex-direction:column}
+.stat-input label{margin:0 0 5px;font-size:13px}
+.stat-input input{padding:8px}
+.turn-indicator{text-align:center;padding:10px;background:#e0f2fe;border-radius:8px;margin-bottom:15px;font-weight:700;color:#0369a1}
 </style></head><body><main>
-<h1>⚡ CARD MISSION</h1><div class="sub">自分のカードで遊ぶカードミッション</div>
-<nav><button class="active" onclick="tab('home',this)">ホーム</button><button onclick="tab('reg',this)">カード登録</button><button onclick="tab('list',this)">カード一覧</button><button onclick="tab('battle',this)">対戦</button></nav>
+<h1>⚡ CARD MISSION</h1><div class="sub">カードで二人対戦！</div>
+<nav><button class="active" onclick="tab('home',this)">ホーム</button><button onclick="tab('reg',this)">カード登録</button><button onclick="tab('list',this)">カード一覧</button><button onclick="tab('battle',this)">対戦 (<span id="count">0</span>)</button></nav>
 
-<section id="home"><div class="box"><h2>ようこそ！</h2><p>カードを撮影 → カード名を入力 → 登録 → 対戦できます。</p><p class="small">カード写真はこの端末のSafari内に保存され、GitHubには保存されません。</p><button class="primary" onclick="tab('reg')">カードを登録する</button></div><div class="box">登録枚数：<strong id="count">0</strong>枚</div></section>
+<section id="home"><div class="box"><h2>ようこそ！</h2><p>🎯 カードを撮影 → カード名と能力値を入力 → 登録 → 対戦できます。</p><p class="small">カード写真はこの端末に保存されます。対戦では選んだ2枚のカードで戦います。</p></div></section>
 
 <section id="reg" class="hidden"><div class="box"><h2>カード登録</h2>
 <label>カード写真</label><input id="photo" type="file" accept="image/*" capture="environment">
 <img id="preview" class="preview">
 <label>カード名</label><input id="name" type="text" placeholder="例：仮面ライダーゼッツ">
-<br><br><button id="save" class="primary">このカードを登録</button> <button id="clear" class="danger">クリア</button>
+<div class="card-stats">
+<div class="stat-input"><label>攻撃力 (1-10)</label><input id="attack" type="number" min="1" max="10" value="5" placeholder="5"></div>
+<div class="stat-input"><label>必殺技倍率 (1.5-3.0)</label><input id="critical" type="number" min="1.5" max="3.0" step="0.1" value="2.0" placeholder="2.0"></div>
+</div>
+<br><button id="save" class="primary">このカードを登録</button> <button id="clear" class="danger">クリア</button>
 <p id="msg" class="small"></p></div></section>
 
 <section id="list" class="hidden"><div class="box"><h2>カード一覧</h2><div id="cards" class="grid"></div><p id="empty" class="small">まだカードがありません。</p></div></section>
 
-<section id="battle" class="hidden"><div class="box"><h2>⚔️ ひとり対戦</h2><select id="mine" style="width:100%;padding:12px;border-radius:10px"></select><br><br><button id="fight" class="primary">バトル開始！</button><div id="result"></div></div></section>
+<section id="battle" class="hidden"><div class="box"><h2>⚔️ 二人対戦</h2>
+<div id="battleSetup" style="display:block">
+<label>プレイヤー1のカード</label><select id="player1" style="width:100%;padding:12px;border-radius:10px"></select>
+<label style="margin-top:15px">プレイヤー2のカード</label><select id="player2" style="width:100%;padding:12px;border-radius:10px"></select>
+<br><br><button id="startBattle" class="primary" style="width:100%;padding:15px;font-size:16px">対戦開始！</button>
+</div>
+<div id="battleArea" class="hidden">
+<div class="turn-indicator">ターン: <span id="turnCount">0</span></div>
+<div class="battle-screen" id="battleScreen"></div>
+<div class="battle-log" id="battleLog"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<button id="p1Attack" class="primary">攻撃</button>
+<button id="p2Attack" class="primary">攻撃</button>
+</div>
+<div id="battleResult" style="text-align:center;margin-top:20px"></div>
+</div>
+</div></section>
+
 </main>
 <script>
-const KEY='cardMissionV4';let data=JSON.parse(localStorage.getItem(KEY)||'[]');
+const KEY='cardMissionV5';let data=JSON.parse(localStorage.getItem(KEY)||'[]');
 const $=x=>document.getElementById(x);
-function tab(id,btn){document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));$(id).classList.remove('hidden');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');render()}
-$('photo').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{$('preview').src=r.result;$('preview').style.display='block'};r.readAsDataURL(f)};
-function compress(src){return new Promise(ok=>{let i=new Image;i.onload=()=>{let m=900,s=Math.min(1,m/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.72))};i.src=src})}
-$('save').onclick=()=>{let f=$('photo').files[0],n=$('name').value.trim();if(!f){$('msg').textContent='カード写真を選んでください。';return}if(!n){$('msg').textContent='カード名を入力してください。';return}let r=new FileReader;r.onload=async()=>{data.unshift({id:Date.now(),name:n,img:await compress(r.result)});localStorage.setItem(KEY,JSON.stringify(data));$('msg').textContent='登録しました！';$('photo').value='';$('name').value='';$('preview').style.display='none';render()};r.readAsDataURL(f)};
-$('clear').onclick=()=>{$('photo').value='';$('name').value='';$('preview').style.display='none';$('msg').textContent=''};
+
+function tab(id,btn){
+  document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));
+  $(id).classList.remove('hidden');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(id==='battle'){updateSelects();}
+}
+
+$('photo').onchange=e=>{
+  let f=e.target.files[0];if(!f)return;
+  let r=new FileReader();
+  r.onload=()=>{$('preview').src=r.result;$('preview').style.display='block'};
+  r.readAsDataURL(f)
+};
+
+function compress(src){
+  return new Promise(ok=>{
+    let i=new Image;i.onload=()=>{
+      let m=900,s=Math.min(1,m/Math.max(i.width,i.height)),c=document.createElement('canvas');
+      c.width=i.width*s;c.height=i.height*s;
+      c.getContext('2d').drawImage(i,0,0,c.width,c.height);
+      ok(c.toDataURL('image/jpeg',0.8))
+    };i.src=src
+  })
+}
+
+$('save').onclick=async()=>{
+  let f=$('photo').files[0],n=$('name').value.trim(),a=parseInt($('attack').value)||5,c=parseFloat($('critical').value)||2.0;
+  if(!f){$('msg').textContent='カード写真を選んでください。';return}
+  if(!n){$('msg').textContent='カード名を入力してください';return}
+  if(a<1||a>10){$('msg').textContent='攻撃力は1-10で入力してください';return}
+  if(c<1.5||c>3.0){$('msg').textContent='必殺技倍率は1.5-3.0で入力してください';return}
+  $('msg').textContent='登録中...';
+  let img=await compress(await new Promise(ok=>{let r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(f)}));
+  data.push({id:Date.now(),name:n,img:img,attack:a,critical:c});
+  localStorage.setItem(KEY,JSON.stringify(data));
+  $('photo').value='';$('name').value='';$('attack').value='5';$('critical').value='2.0';$('preview').style.display='none';$('msg').textContent='登録しました！';
+  render();
+};
+
+$('clear').onclick=()=>{$('photo').value='';$('name').value='';$('attack').value='5';$('critical').value='2.0';$('preview').style.display='none';$('msg').textContent=''};
+
 function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function render(){$('count').textContent=data.length;$('empty').style.display=data.length?'none':'block';$('cards').innerHTML=data.map(c=>'<div class="item"><img src="'+c.img+'"><b>'+esc(c.name)+'</b><button class="danger" onclick="del('+c.id+')">削除</button></div>').join('');$('mine').innerHTML=data.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('')}
+
+function render(){$('count').textContent=data.length;$('empty').style.display=data.length?'none':'block';$('cards').innerHTML=data.map(c=>'<div class="item"><img src="'+c.img+'"><b>'+esc(c.name)+'</b><br><small>攻撃力:'+c.attack+' 必殺技:'+c.critical+'倍</small><button onclick="del('+c.id+')" class="danger" style="width:100%;margin-top:8px;padding:8px">削除</button></div>').join('')}
+
 function del(id){if(confirm('このカードを削除しますか？')){data=data.filter(c=>c.id!==id);localStorage.setItem(KEY,JSON.stringify(data));render()}}
-$('fight').onclick=()=>{if(!data.length){$('result').textContent='まずカードを登録してください。';return}let c=data.find(x=>x.id==$('mine').value)||data[0],e=['ゼロワン','ガッチャード','ギーツ','リバイス','ゼッツ'][Math.floor(Math.random()*5)],a=Math.floor(Math.random()*41)+60,b=Math.floor(Math.random()*41)+60;$('result').innerHTML='<div class="box"><b>'+esc(c.name)+'</b> VS <b>'+e+'</b><br>あなた：'+a+'　相手：'+b+'<div class="result">'+(a>=b?'WIN！':'もう一度チャレンジ！')+'</div></div>'};
+
+function updateSelects(){
+  if(!data.length)return;
+  let opts=data.map(c=>'<option value="'+c.id+'">'+esc(c.name)+' (攻撃力:'+c.attack+')</option>').join('');
+  $('player1').innerHTML=opts;
+  $('player2').innerHTML=opts;
+  if(data.length>1)$('player2').selectedIndex=1;
+}
+
+let battleState={p1:null,p2:null,p1HP:0,p2HP:0,turn:0,gameOver:false};
+
+$('startBattle').onclick=()=>{
+  let p1id=$('player1').value,p2id=$('player2').value;
+  if(p1id===p2id){alert('異なるカードを選んでください');return}
+  let p1=data.find(c=>c.id==p1id),p2=data.find(c=>c.id==p2id);
+  battleState={p1:p1,p2:p2,p1HP:50+p1.attack*5,p2HP:50+p2.attack*5,turn:0,gameOver:false,log:[]};
+  $('battleSetup').classList.add('hidden');
+  $('battleArea').classList.remove('hidden');
+  drawBattle();
+  updateBattleLog('対戦開始！');
+};
+
+function drawBattle(){
+  let{p1,p2,p1HP,p2HP}=battleState;
+  let maxP1=50+p1.attack*5,maxP2=50+p2.attack*5;
+  let p1Percent=Math.max(0,Math.min(100,p1HP/maxP1*100));
+  let p2Percent=Math.max(0,Math.min(100,p2HP/maxP2*100));
+  let p1Color=p1HP<=maxP1*0.25?'#ef4444':p1HP<=maxP1*0.5?'#f59e0b':'#10b981';
+  let p2Color=p2HP<=maxP2*0.25?'#ef4444':p2HP<=maxP2*0.5?'#f59e0b':'#10b981';
+  
+  $('battleScreen').innerHTML=`
+  <div class="player">
+    <h3>🟦 プレイヤー1</h3>
+    <img src="${p1.img}">
+    <b>${esc(p1.name)}</b>
+    <div class="hp-bar">
+      <div class="hp-fill" style="width:${p1Percent}%;background:${p1Color}">
+        <span>${Math.ceil(p1HP)}/${50+p1.attack*5}</span>
+      </div>
+    </div>
+    <small>攻撃力: ${p1.attack} | 必殺技: ${p1.critical}倍</small>
+  </div>
+  <div class="player">
+    <h3>🟥 プレイヤー2</h3>
+    <img src="${p2.img}">
+    <b>${esc(p2.name)}</b>
+    <div class="hp-bar">
+      <div class="hp-fill" style="width:${p2Percent}%;background:${p2Color}">
+        <span>${Math.ceil(p2HP)}/${50+p2.attack*5}</span>
+      </div>
+    </div>
+    <small>攻撃力: ${p2.attack} | 必殺技: ${p2.critical}倍</small>
+  </div>
+  `;
+  $('turnCount').textContent=battleState.turn;
+}
+
+function updateBattleLog(msg){
+  battleState.log.push(msg);
+  let html=battleState.log.map((m,i)=>{
+    let cls='log-entry';
+    if(m.includes('ダメージ'))cls+=' damage';
+    if(m.includes('必殺技'))cls+=' crit';
+    if(m.includes('回復'))cls+=' heal';
+    return '<div class="'+cls+'">'+esc(m)+'</div>';
+  }).join('');
+  $('battleLog').innerHTML=html;
+  $('battleLog').scrollTop=$('battleLog').scrollHeight;
+}
+
+function showEffect(damage,isCrit,elementY){
+  let effect=document.createElement('div');
+  effect.className='effect'+(isCrit?' crit':' damage');
+  effect.textContent=isCrit?'必殺技!':(damage>0?'−'+damage:'MISS');
+  effect.style.left=(window.innerWidth/2)+'px';
+  effect.style.top=elementY+'px';
+  document.body.appendChild(effect);
+  setTimeout(()=>effect.remove(),1500);
+}
+
+function attack(attacker,defender){
+  if(battleState.gameOver)return;
+  let isCrit=Math.random()<0.3;
+  let baseDamage=attacker.attack*(1+Math.random()*0.5);
+  let damage=Math.ceil(isCrit?baseDamage*attacker.critical:baseDamage);
+  
+  if(attacker===battleState.p1){
+    battleState.p2HP=Math.max(0,battleState.p2HP-damage);
+    let msg=esc(attacker.name)+'の'+(isCrit?'必殺技':'攻撃')+'！'+damage+'ダメージ！';
+    updateBattleLog(msg);
+    showEffect(damage,isCrit,window.innerHeight/2);
+  }else{
+    battleState.p1HP=Math.max(0,battleState.p1HP-damage);
+    let msg=esc(attacker.name)+'の'+(isCrit?'必殺技':'攻撃')+'！'+damage+'ダメージ！';
+    updateBattleLog(msg);
+    showEffect(damage,isCrit,window.innerHeight/2);
+  }
+  
+  battleState.turn++;
+  drawBattle();
+  
+  if(battleState.p1HP<=0||battleState.p2HP<=0){
+    battleState.gameOver=true;
+    setTimeout(()=>{
+      let winner=battleState.p1HP>0?battleState.p1:battleState.p2;
+      let loserName=battleState.p1HP>0?battleState.p2.name:battleState.p1.name;
+      let winnerName=winner.name;
+      updateBattleLog('🎉 '+esc(winnerName)+'の勝利！');
+      $('battleResult').innerHTML='<div class="winner">🎉 '+esc(winnerName)+'の勝利！</div><button class="primary" onclick="location.reload()" style="width:100%;padding:12px;font-size:16px;margin-top:15px">もう一度遊ぶ</button>';
+      $('p1Attack').disabled=true;
+      $('p2Attack').disabled=true;
+    },800);
+  }
+}
+
+$('p1Attack').onclick=()=>{attack(battleState.p1,battleState.p2)};
+$('p2Attack').onclick=()=>{attack(battleState.p2,battleState.p1)};
+
 render();
 </script></body></html>
