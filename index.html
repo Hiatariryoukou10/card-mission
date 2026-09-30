@@ -1,68 +1,112 @@
 <!doctype html>
-<html lang="ja"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="apple-mobile-web-app-capable" content="yes"><title>CARD MISSION</title>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>CARD MISSION - 自動カード認識版</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js"></script>
 <style>
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fb;margin:0;color:#18202a}
 main{max-width:700px;margin:auto;padding:18px}h1{margin:5px 0}.sub{color:#687384;margin-bottom:15px}
 nav{display:flex;gap:7px;overflow:auto;margin-bottom:12px}button{border:0;border-radius:12px;padding:12px 15px;font-weight:700;background:#e4e9f1;color:#26313d;cursor:pointer}
 nav button.active,.primary{background:#202b38;color:white}.box{background:white;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 2px 12px #0001}
 label{display:block;font-weight:700;margin:12px 0 7px}input[type=text],input[type=number]{width:100%;padding:13px;border:1px solid #ccd4df;border-radius:10px;font-size:16px;box-sizing:border-box}
-.preview{width:100%;max-height:360px;object-fit:contain;margin-top:10px;border-radius:12px;display:none;background:#eee}
+.preview{width:100%;max-height:420px;object-fit:contain;margin-top:10px;border-radius:12px;display:none;background:#eee}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.item{border:1px solid #e0e5ec;border-radius:14px;padding:8px}.item img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:9px}
-.hidden{display:none}.small{font-size:13px;color:#687384}.danger{background:#fff0f0;color:#b42318}.result{font-size:25px;font-weight:800;margin-top:12px}
-.battle-screen{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px}
-.player{border:2px solid #e0e5ec;border-radius:12px;padding:15px;text-align:center;background:#f9fafc}
+.hidden{display:none}.small{font-size:13px;color:#687384}.danger{background:#fff0f0;color:#b42318}
+.battle-screen{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px}.player{border:2px solid #e0e5ec;border-radius:12px;padding:15px;text-align:center;background:#f9fafc}
 .player h3{margin:0 0 10px;font-size:16px}.player img{width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin:10px 0}
-.hp-bar{width:100%;height:24px;background:#e0e5ec;border-radius:8px;overflow:hidden;margin:10px 0}
-.hp-fill{height:100%;background:#10b981;transition:width .3s ease;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px}
-.hp-fill.warn{background:#f59e0b}.hp-fill.danger{background:#ef4444}
+.hp-bar{width:100%;height:24px;background:#e0e5ec;border-radius:8px;overflow:hidden;margin:10px 0}.hp-fill{height:100%;transition:width .3s ease;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px}
 .battle-log{background:#f0f5fa;border-radius:10px;padding:12px;margin:15px 0;min-height:80px;max-height:200px;overflow-y:auto;font-size:13px}
-.log-entry{margin:6px 0;padding:6px;border-left:3px solid #10b981;background:white;border-radius:4px}
-.log-entry.damage{border-left-color:#ef4444}.log-entry.crit{border-left-color:#f59e0b;font-weight:700}
-.effect{position:fixed;pointer-events:none;font-weight:700;font-size:24px;animation:float 1.5s ease-out forwards;z-index:9999}
-@keyframes float{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
-.effect.damage{color:#ef4444}.effect.crit{color:#f59e0b;text-shadow:0 0 10px #f59e0b}
-.winner{font-size:28px;font-weight:800;color:#10b981;margin:20px 0}
-select{width:100%;padding:12px;border-radius:10px;border:1px solid #ccd4df;margin-bottom:12px}
-.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.log-entry{margin:6px 0;padding:6px;border-left:3px solid #10b981;background:white;border-radius:4px}.log-entry.damage{border-left-color:#ef4444}.log-entry.crit{border-left-color:#f59e0b;font-weight:700}
+.effect{position:fixed;pointer-events:none;font-weight:700;font-size:24px;animation:float 1.5s ease-out forwards;z-index:9999}@keyframes float{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
+.effect.damage{color:#ef4444}.effect.crit{color:#f59e0b;text-shadow:0 0 10px #f59e0b}.winner{font-size:28px;font-weight:800;color:#10b981;margin:20px 0}
+select{width:100%;padding:12px;border-radius:10px;border:1px solid #ccd4df;margin-bottom:12px}.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stat-input{display:flex;flex-direction:column}.stat-input label{margin:0 0 5px;font-size:12px;font-weight:600}
 .turn-indicator{text-align:center;padding:10px;background:#e0f2fe;border-radius:8px;margin-bottom:15px;font-weight:700;color:#0369a1}
 .info-box{background:#f0f9ff;border-left:4px solid #3b82f6;padding:10px;border-radius:6px;margin:12px 0;font-size:12px}
-</style></head><body><main>
-<h1>⚡ CARD MISSION</h1><div class="sub">5つのステータスで対戦！</div>
-<nav><button class="active" onclick="tab('home',this)">ホーム</button><button onclick="tab('reg',this)">登録</button><button onclick="tab('list',this)">一覧</button><button onclick="tab('battle',this)">対戦 (<span id="count">0</span>)</button></nav>
+.scan-box{background:#fff8e7;border-left:4px solid #f59e0b;padding:12px;border-radius:8px;margin:12px 0;font-size:13px}
+.status{padding:10px;border-radius:10px;background:#eef2f7;margin-top:10px;font-size:13px}.status.ok{background:#ecfdf5;color:#047857}.status.warn{background:#fff7ed;color:#c2410c}
+.progress{height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin-top:8px}.progress>div{height:100%;width:0;background:#2563eb;transition:width .2s}
+.raw{white-space:pre-wrap;word-break:break-word;background:#f8fafc;border-radius:8px;padding:8px;font-size:11px;max-height:140px;overflow:auto}
+.card-no{font-size:20px;font-weight:800;letter-spacing:.5px}.source{font-size:11px;color:#6b7280;margin-top:5px}
+</style>
+</head>
+<body>
+<main>
+<h1>⚡ CARD MISSION</h1>
+<div class="sub">撮影 → カード番号を認識 → ステータス自動取得 → 対戦！</div>
 
-<section id="home"><div class="box"><h2>ようこそ！</h2>
+<nav>
+<button class="active" onclick="tab('home',this)">ホーム</button>
+<button onclick="tab('reg',this)">登録</button>
+<button onclick="tab('list',this)">一覧</button>
+<button onclick="tab('battle',this)">対戦 (<span id="count">0</span>)</button>
+</nav>
+
+<section id="home">
+<div class="box">
+<h2>ようこそ！</h2>
 <div class="info-box">
-<strong>📊 ステータス説明：</strong><br>
-🔴 <b>コウゲキ</b> = 攻撃力（1-20）<br>
-🔵 <b>ボウギョ</b> = 防御力（1-20）<br>
-🟡 <b>タイリョク</b> = 体力（10-100）<br>
-🟢 <b>スピードレベル</b> = 速さ（1-20）<br>
-⚡ <b>必殺技攻撃力</b> = 特殊攻撃（1-50）
+<strong>📷 自動カード認識</strong><br>
+カードを撮影すると、まずカード番号（例：GL04-056、SC01-054）をOCRで探します。見つかった番号を使ってカードデータを検索し、名前・コウゲキ・ボウギョ・タイリョク・スピード・ヒッサツを自動入力します。
 </div>
-<p>カード写真を撮影 → ステータスを入力 → 登録 → 対戦！</p>
-</div></section>
+<div class="scan-box">
+<strong>撮影のコツ</strong><br>
+① カード全体を写す　② 明るくする　③ 光の反射を避ける　④ カードをまっすぐ撮る<br>
+<strong>特にカード番号が小さい場合は、番号部分がぼやけないようにしてください。</strong>
+</div>
+<p class="small">自動取得できなかった場合は、OCRで読み取った数字を候補として残します。登録前に確認・修正できます。</p>
+</div>
+</section>
 
-<section id="reg" class="hidden"><div class="box"><h2>カード登録</h2>
-<label>写真</label><input id="photo" type="file" accept="image/*" capture="environment">
+<section id="reg" class="hidden">
+<div class="box">
+<h2>📷 カード登録</h2>
+<label>カード写真</label>
+<input id="photo" type="file" accept="image/*" capture="environment">
 <img id="preview" class="preview">
-<label>カード名</label><input id="name" type="text" placeholder="例：仮面ライダーゼッツ">
-<div class="stats-grid">
-<div class="stat-input"><label>🔴 コウゲキ</label><input id="attack" type="number" min="1" max="20" value="10"></div>
-<div class="stat-input"><label>🔵 ボウギョ</label><input id="defense" type="number" min="1" max="20" value="5"></div>
-<div class="stat-input"><label>🟡 タイリョク</label><input id="hp" type="number" min="10" max="100" value="50"></div>
-<div class="stat-input"><label>🟢 スピード</label><input id="speed" type="number" min="1" max="20" value="10"></div>
-<div class="stat-input"><label>⚡ 必殺技</label><input id="special" type="number" min="1" max="50" value="25"></div>
+
+<div id="status" class="status hidden">
+<div id="statusText">解析中…</div>
+<div class="progress"><div id="progress"></div></div>
 </div>
-<br><button id="save" class="primary">登録する</button> <button id="clear" class="danger">クリア</button>
+
+<div id="cardNoBox" class="hidden">
+<label>認識したカード番号</label>
+<div class="card-no" id="cardNo"></div>
+<button id="retryLookup" style="margin-top:8px">この番号で再検索</button>
+<div class="source" id="sourceText"></div>
+</div>
+
+<label>カード名</label>
+<input id="name" type="text" placeholder="例：仮面ライダーゼッツ">
+
+<div class="stats-grid">
+<div class="stat-input"><label>🔴 コウゲキ</label><input id="attack" type="number" min="1" max="99999" value="10"></div>
+<div class="stat-input"><label>🔵 ボウギョ</label><input id="defense" type="number" min="1" max="99999" value="5"></div>
+<div class="stat-input"><label>🟡 タイリョク</label><input id="hp" type="number" min="1" max="99999" value="50"></div>
+<div class="stat-input"><label>🟢 スピード</label><input id="speed" type="number" min="1" max="99" value="10"></div>
+<div class="stat-input"><label>⚡ 必殺</label><input id="special" type="number" min="1" max="99999" value="25"></div>
+</div>
+
+<p class="small">自動取得後も数字は自由に修正できます。</p>
+<button id="save" class="primary">登録する</button>
+<button id="clear" class="danger">クリア</button>
 <p id="msg" class="small"></p>
-</div></section>
+
+<details id="debugBox" class="hidden">
+<summary>OCR結果を見る</summary>
+<div id="rawOcr" class="raw"></div>
+</details>
+</div>
+</section>
 
 <section id="list" class="hidden"><div class="box"><h2>カード一覧</h2><div id="cards" class="grid"></div><p id="empty" class="small">まだカードがありません</p></div></section>
 
-<section id="battle" class="hidden"><div class="box"><h2>⚔️ 二人対戦</h2>
+<section id="battle" class="hidden">
+<div class="box"><h2>⚔️ 二人対戦</h2>
 <div id="battleSetup">
 <label>プレイヤー1</label><select id="p1"></select>
 <label>プレイヤー2</label><select id="p2"></select>
@@ -73,210 +117,342 @@ select{width:100%;padding:12px;border-radius:10px;border:1px solid #ccd4df;margi
 <div class="battle-screen" id="screen"></div>
 <div class="battle-log" id="log"></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-<button id="p1Btn" class="primary">攻撃</button>
-<button id="p2Btn" class="primary">攻撃</button>
+<button id="p1Btn" class="primary">P1 攻撃</button>
+<button id="p2Btn" class="primary">P2 攻撃</button>
 </div>
 <div id="result"></div>
 </div>
-</div></section>
-
+</div>
+</section>
 </main>
+
 <script>
-const KEY='cardMissionV7';
+const KEY='cardMissionAutoV2';
 let cards=JSON.parse(localStorage.getItem(KEY)||'[]');
 const $=id=>document.getElementById(id);
 
 function tab(id,btn){
-  document.querySelectorAll('section').forEach(s=>s.classList.add('hidden'));
-  $(id).classList.remove('hidden');
-  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  if(id==='battle')updateSelects();
+ document.querySelectorAll('section').forEach(s=>s.classList.add('hidden'));
+ $(id).classList.remove('hidden');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+ btn.classList.add('active');
+ if(id==='battle')updateSelects();
+}
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+function setStatus(text,kind=''){
+ $('status').classList.remove('hidden','ok','warn');
+ if(kind)$('status').classList.add(kind);
+ $('statusText').textContent=text;
+}
+
+function progress(n){$('progress').style.width=Math.max(0,Math.min(100,n))+'%'}
+
+function normalize(s){
+ return String(s||'').replace(/[‐‑‒–—−]/g,'-').replace(/[Ｏｏ]/g,'0').replace(/[Ｉｌｉ]/g,'1')
+   .replace(/[Ｓｓ]/g,'5').replace(/[Ｇｇ]/g,'G').replace(/[Ｖｖ]/g,'V').replace(/[Ｐｐ]/g,'P')
+   .replace(/\s+/g,'').toUpperCase();
+}
+
+function findCardNumbers(text){
+ const t=normalize(text);
+ const patterns=[
+  /\b(?:GL|SC|VR|CX|GBRC|PSC|PR|ST|SCBT)-?\d{1,3}(?:-\d{1,3})?\b/g,
+  /\b(?:GL|SC|VR|CX)\d{1,2}[-]?\d{2,3}\b/g,
+  /\b(?:PSC|GBRC|SCBT|PR|ST)[-]?\d{2,3}\b/g
+ ];
+ let found=[];
+ for(const re of patterns){
+  const m=t.match(re)||[];
+  found.push(...m);
+ }
+ found=found.map(x=>x.replace(/\s/g,'').replace(/(GL|SC|VR|CX)(\d{1,2})(\d{2,3})$/,'$1$2-$3'));
+ return [...new Set(found)];
+}
+
+function cleanNum(s){
+ const m=String(s||'').replace(/[,\s]/g,'').match(/\d{1,6}/);
+ return m?parseInt(m[0],10):null;
+}
+
+function fallbackStats(text){
+ const t=String(text||'').replace(/[：:]/g,'').replace(/\s+/g,'');
+ const out={};
+ const labels=[
+  ['attack',['コウゲキ','攻撃']],
+  ['defense',['ボウギョ','防御']],
+  ['hp',['タイリョク','体力']],
+  ['speed',['スピード']],
+  ['special',['ヒッサツ','必殺']]
+ ];
+ for(const [key,ls] of labels){
+  for(const label of ls){
+   const i=t.indexOf(label);
+   if(i>=0){
+    const m=t.slice(i,i+50).match(/\d{1,6}/g);
+    if(m){out[key]=cleanNum(m[0]);break;}
+   }
+  }
+ }
+ return out;
+}
+
+async function lookupCard(cardNo){
+ // Jina Reader turns the card page into text. The source is a community card database;
+ // official site remains the primary reference for the existence/card numbering.
+ const url='https://www.ganbalegends-search.com/cards/'+encodeURIComponent(cardNo);
+ const reader='https://r.jina.ai/'+url;
+ const res=await fetch(reader,{cache:'no-store'});
+ if(!res.ok)throw new Error('lookup '+res.status);
+ const text=await res.text();
+
+ const nameMatch=text.match(/^#\s+(.+?)\s*$/m);
+ const name=nameMatch?nameMatch[1].trim():'';
+
+ function stat(label,nextLabels){
+   const re=new RegExp(label+'\\s*\\n\\s*([\\d,]+)');
+   const m=text.match(re);
+   if(m)return cleanNum(m[1]);
+   return null;
+ }
+
+ // The research site presents these labels as separate text blocks.
+ const data={
+  name,
+  attack:stat('コウゲキ'),
+  defense:stat('ボウギョ'),
+  hp:stat('タイリョク'),
+  speed:stat('スピード'),
+  special:null
+ };
+
+ // ヒッサツ is followed by the move name and then its number in many pages.
+ let hm=text.match(/ヒッサツ\s*\n\s*[^\\n]*?([\\d,]+)\s*(?:\n|$)/);
+ if(hm)data.special=cleanNum(hm[1]);
+
+ // More tolerant fallback: locate the status section and take the first number after ヒッサツ.
+ if(data.special==null){
+  const i=text.indexOf('ヒッサツ');
+  if(i>=0){
+   const tail=text.slice(i,i+300);
+   const nums=tail.match(/\d{1,2}(?:,\d{3})/g)||tail.match(/\d{3,5}/g)||[];
+   if(nums.length)data.special=cleanNum(nums[nums.length-1]);
+  }
+ }
+ return data;
+}
+
+async function lookupAndFill(cardNo){
+ setStatus('🔎 カード番号 '+cardNo+' のデータを検索しています…');
+ progress(20);
+ $('cardNoBox').classList.remove('hidden');
+ $('cardNo').textContent=cardNo;
+ try{
+  const d=await lookupCard(cardNo);
+  progress(90);
+  if(d.name)$('name').value=d.name;
+  if(d.attack!=null)$('attack').value=d.attack;
+  if(d.defense!=null)$('defense').value=d.defense;
+  if(d.hp!=null)$('hp').value=d.hp;
+  if(d.speed!=null)$('speed').value=d.speed;
+  if(d.special!=null)$('special').value=d.special;
+
+  const got=[d.attack,d.defense,d.hp,d.speed,d.special].filter(v=>v!=null).length;
+  $('sourceText').textContent='カード番号からデータベースを照合しました。登録前に確認してください。';
+  setStatus('✅ '+got+'/5項目を自動取得しました。',got===5?'ok':'warn');
+  progress(100);
+  return got;
+ }catch(e){
+  console.warn(e);
+  $('sourceText').textContent='自動照合に失敗しました。OCRで読み取った候補を使います。';
+  setStatus('⚠️ 自動照合できませんでした。下の数字を確認・修正してください。','warn');
+  progress(100);
+  return 0;
+ }
+}
+
+async function recognizeCard(src){
+ setStatus('📖 カード写真をOCR解析しています…');
+ progress(2);
+ try{
+  const worker=await Tesseract.createWorker('jpn+eng',1,{
+   logger:m=>{
+    if(m.status)$('statusText').textContent='📖 '+m.status;
+    if(typeof m.progress==='number')progress(m.progress*70);
+   }
+  });
+  const result=await worker.recognize(src);
+  await worker.terminate();
+
+  const text=result.data.text||'';
+  $('rawOcr').textContent=text;
+  $('debugBox').classList.remove('hidden');
+
+  const nums=fallbackStats(text);
+  if(nums.attack!=null)$('attack').value=nums.attack;
+  if(nums.defense!=null)$('defense').value=nums.defense;
+  if(nums.hp!=null)$('hp').value=nums.hp;
+  if(nums.speed!=null)$('speed').value=nums.speed;
+  if(nums.special!=null)$('special').value=nums.special;
+
+  const candidates=findCardNumbers(text);
+  if(candidates.length){
+   const cardNo=candidates[0];
+   $('cardNoBox').classList.remove('hidden');
+   $('cardNo').textContent=cardNo;
+   await lookupAndFill(cardNo);
+  }else{
+   setStatus('⚠️ カード番号を読み取れませんでした。写真を撮り直すか、下の数字を確認してください。','warn');
+   progress(100);
+  }
+ }catch(e){
+  console.error(e);
+  setStatus('⚠️ OCRに失敗しました。もう一度撮影してください。','warn');
+  progress(100);
+ }
 }
 
 $('photo').onchange=e=>{
-  let f=e.target.files[0];
-  if(!f)return;
-  let r=new FileReader();
-  r.onload=()=>{$('preview').src=r.result;$('preview').style.display='block'};
-  r.readAsDataURL(f);
+ const f=e.target.files[0]; if(!f)return;
+ const r=new FileReader();
+ r.onload=()=>{
+  $('preview').src=r.result;
+  $('preview').style.display='block';
+  recognizeCard(r.result);
+ };
+ r.readAsDataURL(f);
+};
+
+$('retryLookup').onclick=async()=>{
+ const no=$('cardNo').textContent.trim();
+ if(no)await lookupAndFill(no);
 };
 
 function compress(src){
-  return new Promise(ok=>{
-    let i=new Image;
-    i.onload=()=>{
-      let c=document.createElement('canvas');
-      let s=Math.min(1,900/Math.max(i.width,i.height));
-      c.width=i.width*s;c.height=i.height*s;
-      c.getContext('2d').drawImage(i,0,0,c.width,c.height);
-      ok(c.toDataURL('image/jpeg',0.8));
-    };
-    i.src=src;
-  });
+ return new Promise(ok=>{
+  const i=new Image;
+  i.onload=()=>{
+   const c=document.createElement('canvas');
+   const s=Math.min(1,900/Math.max(i.width,i.height));
+   c.width=i.width*s;c.height=i.height*s;
+   c.getContext('2d').drawImage(i,0,0,c.width,c.height);
+   ok(c.toDataURL('image/jpeg',0.82));
+  };
+  i.src=src;
+ });
 }
 
 $('save').onclick=async()=>{
-  let f=$('photo').files[0];
-  let n=$('name').value.trim();
-  let a=parseInt($('attack').value)||10;
-  let d=parseInt($('defense').value)||5;
-  let h=parseInt($('hp').value)||50;
-  let s=parseInt($('speed').value)||10;
-  let sp=parseInt($('special').value)||25;
-  
-  if(!f){$('msg').textContent='写真を選んでください';return}
-  if(!n){$('msg').textContent='名前を入力してください';return}
-  
-  $('msg').textContent='登録中...';
-  let img=await compress(await new Promise(ok=>{
-    let r=new FileReader();
-    r.onload=()=>ok(r.result);
-    r.readAsDataURL(f);
-  }));
-  
-  cards.push({id:Date.now(),name:n,img,attack:a,defense:d,hp:h,speed:s,special:sp});
-  localStorage.setItem(KEY,JSON.stringify(cards));
-  
-  $('photo').value='';
-  $('name').value='';
-  $('attack').value='10';
-  $('defense').value='5';
-  $('hp').value='50';
-  $('speed').value='10';
-  $('special').value='25';
-  $('preview').style.display='none';
-  $('msg').textContent='登録しました！';
-  render();
+ const f=$('photo').files[0], n=$('name').value.trim();
+ if(!f){$('msg').textContent='写真を選んでください';return}
+ if(!n){$('msg').textContent='カード名を入力してください';return}
+
+ const a=parseInt($('attack').value)||10,d=parseInt($('defense').value)||5;
+ const h=parseInt($('hp').value)||50,s=parseInt($('speed').value)||10,sp=parseInt($('special').value)||25;
+
+ $('msg').textContent='登録中…';
+ const img=await compress(await new Promise(ok=>{
+  const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(f);
+ }));
+
+ cards.push({id:Date.now(),name:n,cardNo:$('cardNo').textContent.trim(),img,attack:a,defense:d,hp:h,speed:s,special:sp});
+ localStorage.setItem(KEY,JSON.stringify(cards));
+ resetForm();
+ $('msg').textContent='✅ 登録しました！';
+ render();
 };
 
-$('clear').onclick=()=>{
-  $('photo').value='';$('name').value='';
-  $('attack').value='10';$('defense').value='5';$('hp').value='50';$('speed').value='10';$('special').value='25';
-  $('preview').style.display='none';$('msg').textContent='';
-};
+function resetForm(){
+ $('photo').value='';$('name').value='';
+ $('attack').value='10';$('defense').value='5';$('hp').value='50';$('speed').value='10';$('special').value='25';
+ $('preview').style.display='none';$('status').classList.add('hidden');$('cardNoBox').classList.add('hidden');
+ $('debugBox').classList.add('hidden');$('rawOcr').textContent='';$('sourceText').textContent='';
+ progress(0);
+}
 
-function esc(s){return s.replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
+$('clear').onclick=()=>{resetForm();$('msg').textContent=''};
 
 function render(){
-  $('count').textContent=cards.length;
-  $('empty').style.display=cards.length?'none':'block';
-  $('cards').innerHTML=cards.map(c=>
-    '<div class=\"item\"><img src=\"'+c.img+'\"><b>'+esc(c.name)+'</b><br><small>'+
-    '🔴'+c.attack+' 🔵'+c.defense+' 🟡'+c.hp+' 🟢'+c.speed+' ⚡'+c.special+
-    '</small><button onclick=\"del('+c.id+')\" class=\"danger\" style=\"width:100%;margin-top:8px;padding:8px\">削除</button></div>'
-  ).join('');
+ $('count').textContent=cards.length;
+ $('empty').style.display=cards.length?'none':'block';
+ $('cards').innerHTML=cards.map(c=>
+  '<div class="item"><img src="'+c.img+'"><b>'+esc(c.name)+'</b><br>'+
+  (c.cardNo?'<small>🪪 '+esc(c.cardNo)+'</small><br>':'')+
+  '<small>🔴'+c.attack+' 🔵'+c.defense+' 🟡'+c.hp+' 🟢'+c.speed+' ⚡'+c.special+'</small>'+
+  '<button onclick="del('+c.id+')" class="danger" style="width:100%;margin-top:8px;padding:8px">削除</button></div>'
+ ).join('');
 }
-
 function del(id){
-  if(confirm('削除しますか？')){
-    cards=cards.filter(c=>c.id!==id);
-    localStorage.setItem(KEY,JSON.stringify(cards));
-    render();
-  }
+ if(confirm('削除しますか？')){
+  cards=cards.filter(c=>c.id!==id);localStorage.setItem(KEY,JSON.stringify(cards));render();
+ }
 }
-
 function updateSelects(){
-  if(!cards.length)return;
-  let opts=cards.map(c=>'<option value=\"'+c.id+'\">'+esc(c.name)+'</option>').join('');
-  $('p1').innerHTML=opts;
-  $('p2').innerHTML=opts;
-  if(cards.length>1)$('p2').selectedIndex=1;
+ if(!cards.length)return;
+ const opts=cards.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('');
+ $('p1').innerHTML=opts;$('p2').innerHTML=opts;
+ if(cards.length>1)$('p2').selectedIndex=1;
 }
 
-let battle={p1:null,p2:null,hp1:0,hp2:0,turn:0,end:false,log:[]};
-
+let battle={};
 $('startBattle').onclick=()=>{
-  let id1=$('p1').value,id2=$('p2').value;
-  if(id1===id2){alert('違うカード選んで');return}
-  let p1=cards.find(c=>c.id==id1);
-  let p2=cards.find(c=>c.id==id2);
-  battle={p1,p2,hp1:p1.hp,hp2:p2.hp,turn:0,end:false,log:[]};
-  $('battleSetup').classList.add('hidden');
-  $('battleArea').classList.remove('hidden');
-  draw();
-  log('対戦開始！');
+ const id1=$('p1').value,id2=$('p2').value;
+ if(id1===id2){alert('違うカードを選んでください');return}
+ const p1=cards.find(c=>c.id==id1),p2=cards.find(c=>c.id==id2);
+ const maxHp1=Math.max(70,Math.round(p1.hp/45)),maxHp2=Math.max(70,Math.round(p2.hp/45));
+ battle={p1,p2,hp1:maxHp1,hp2:maxHp2,maxHp1,maxHp2,turn:0,end:false,log:[]};
+ $('battleSetup').classList.add('hidden');$('battleArea').classList.remove('hidden');
+ $('result').innerHTML='';$('p1Btn').disabled=false;$('p2Btn').disabled=false;
+ draw();log('⚔️ 対戦開始！');
 };
 
+function atk(c){return Math.max(4,c.attack/120)}
+function def(c){return Math.max(0,Math.min(.45,c.defense/180))}
+function special(c){return Math.max(8,c.special/110)}
+
 function draw(){
-  let{p1,p2,hp1,hp2}=battle;
-  let pct1=Math.max(0,Math.min(100,hp1/p1.hp*100));
-  let pct2=Math.max(0,Math.min(100,hp2/p2.hp*100));
-  let col1=hp1<=p1.hp*0.25?'#ef4444':hp1<=p1.hp*0.5?'#f59e0b':'#10b981';
-  let col2=hp2<=p2.hp*0.25?'#ef4444':hp2<=p2.hp*0.5?'#f59e0b':'#10b981';
-  
-  $('screen').innerHTML=`
-    <div class="player">
-      <h3>🟦 P1</h3>
-      <img src="${p1.img}">
-      <b>${esc(p1.name)}</b>
-      <div class="hp-bar"><div class="hp-fill" style="width:${pct1}%;background:${col1}"><span>${Math.ceil(hp1)}/${p1.hp}</span></div></div>
-      <small>🔴${p1.attack} 🔵${p1.defense} 🟢${p1.speed}</small>
-    </div>
-    <div class="player">
-      <h3>🟥 P2</h3>
-      <img src="${p2.img}">
-      <b>${esc(p2.name)}</b>
-      <div class="hp-bar"><div class="hp-fill" style="width:${pct2}%;background:${col2}"><span>${Math.ceil(hp2)}/${p2.hp}</span></div></div>
-      <small>🔴${p2.attack} 🔵${p2.defense} 🟢${p2.speed}</small>
-    </div>
-  `;
-  $('turn').textContent=battle.turn;
+ const {p1,p2,hp1,hp2}=battle;
+ const a=Math.max(0,Math.min(100,hp1/battle.maxHp1*100)),b=Math.max(0,Math.min(100,hp2/battle.maxHp2*100));
+ const ca=a<=25?'#ef4444':a<=50?'#f59e0b':'#10b981',cb=b<=25?'#ef4444':b<=50?'#f59e0b':'#10b981';
+ $('screen').innerHTML=
+ `<div class="player"><h3>🟦 P1</h3><img src="${p1.img}"><b>${esc(p1.name)}</b>
+ <div class="hp-bar"><div class="hp-fill" style="width:${a}%;background:${ca}"><span>${Math.ceil(hp1)}/${battle.maxHp1}</span></div></div>
+ <small>🔴${p1.attack} 🔵${p1.defense} 🟢${p1.speed} ⚡${p1.special}</small></div>
+ <div class="player"><h3>🟥 P2</h3><img src="${p2.img}"><b>${esc(p2.name)}</b>
+ <div class="hp-bar"><div class="hp-fill" style="width:${b}%;background:${cb}"><span>${Math.ceil(hp2)}/${battle.maxHp2}</span></div></div>
+ <small>🔴${p2.attack} 🔵${p2.defense} 🟢${p2.speed} ⚡${p2.special}</small></div>`;
+ $('turn').textContent=battle.turn;
 }
-
 function log(msg){
-  battle.log.push(msg);
-  $('log').innerHTML=battle.log.map(m=>{
-    let cls='log-entry';
-    if(m.includes('ダメージ'))cls+=' damage';
-    if(m.includes('必殺技'))cls+=' crit';
-    return '<div class="'+cls+'">'+esc(m)+'</div>';
-  }).join('');
-  $('log').scrollTop=$('log').scrollHeight;
+ battle.log.push(msg);
+ $('log').innerHTML=battle.log.map(m=>'<div class="log-entry '+(m.includes('ダメージ')?'damage ':'')+(m.includes('必殺技')?'crit':'')+'">'+esc(m)+'</div>').join('');
+ $('log').scrollTop=$('log').scrollHeight;
 }
-
-function effect(dmg,isCrit){
-  let e=document.createElement('div');
-  e.className='effect'+(isCrit?' crit':' damage');
-  e.textContent=isCrit?'必殺技!':'-'+dmg;
-  e.style.left=(window.innerWidth/2)+'px';
-  e.style.top=(window.innerHeight/2)+'px';
-  document.body.appendChild(e);
-  setTimeout(()=>e.remove(),1500);
+function effect(dmg,crit){
+ const e=document.createElement('div');e.className='effect '+(crit?'crit':'damage');e.textContent=crit?'必殺技!':'-'+Math.ceil(dmg);
+ e.style.left=(innerWidth/2)+'px';e.style.top=(innerHeight/2)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),1500);
 }
-
 function attack(attacker,defender){
-  if(battle.end)return;
-  
-  let isCrit=Math.random()<0.25;
-  let base=attacker.attack+Math.random()*3;
-  let dmg=Math.max(1,Math.ceil(isCrit?attacker.special:base)*(1-defender.defense/50));
-  
-  if(attacker===battle.p1){
-    battle.hp2=Math.max(0,battle.hp2-dmg);
-    log(esc(attacker.name)+(isCrit?'の必殺技':'が攻撃')+'！'+dmg+'ダメージ！');
-  }else{
-    battle.hp1=Math.max(0,battle.hp1-dmg);
-    log(esc(attacker.name)+(isCrit?'の必殺技':'が攻撃')+'！'+dmg+'ダメージ！');
-  }
-  effect(dmg,isCrit);
-  battle.turn++;
-  draw();
-  
-  if(battle.hp1<=0||battle.hp2<=0){
-    battle.end=true;
-    setTimeout(()=>{
-      let winner=battle.hp1>0?battle.p1:battle.p2;
-      log('🎉 '+esc(winner.name)+'の勝利！');
-      $('result').innerHTML='<div class=\"winner\">🎉 '+esc(winner.name)+'の勝利！</div><button class=\"primary\" onclick=\"location.reload()\" style=\"width:100%;padding:12px;margin-top:15px\">もう一度</button>';
-      $('p1Btn').disabled=true;
-      $('p2Btn').disabled=true;
-    },800);
-  }
+ if(battle.end)return;
+ const crit=Math.random()<.25;
+ const raw=(crit?special(attacker):atk(attacker))*(.85+Math.random()*.3);
+ const dmg=Math.max(2,Math.ceil(raw*(1-def(defender))));
+ if(attacker===battle.p1)battle.hp2=Math.max(0,battle.hp2-dmg);else battle.hp1=Math.max(0,battle.hp1-dmg);
+ log(attacker.name+(crit?'の必殺技！':'が攻撃！')+dmg+'ダメージ！');effect(dmg,crit);battle.turn++;draw();
+ if(battle.hp1<=0||battle.hp2<=0){
+  battle.end=true;
+  setTimeout(()=>{
+   const winner=battle.hp1>0?battle.p1:battle.p2;
+   log('🎉 '+winner.name+'の勝利！');
+   $('result').innerHTML='<div class="winner">🎉 '+esc(winner.name)+'の勝利！</div><button class="primary" onclick="location.reload()" style="width:100%;padding:12px;margin-top:15px">もう一度</button>';
+   $('p1Btn').disabled=true;$('p2Btn').disabled=true;
+  },500);
+ }
 }
-
 $('p1Btn').onclick=()=>attack(battle.p1,battle.p2);
 $('p2Btn').onclick=()=>attack(battle.p2,battle.p1);
-
 render();
-</script></body></html>
+</script>
+</body>
+</html>
